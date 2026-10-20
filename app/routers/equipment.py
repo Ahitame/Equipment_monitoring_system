@@ -2,8 +2,9 @@ from fastapi import APIRouter, status, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.models import Equipment as EquipmentModel
+from app.models import Equipment as EquipmentModel, Measurement as MeasurementModel
 from app.schemas import Equipment as EquipmentSchema, EquipmentCreate, EquipmentStatistics
+from app.equipment_status import get_equipment_status
 
 from app.db_depends import get_async_db
 
@@ -23,6 +24,10 @@ async def create_equipment(equipment: EquipmentCreate, db: AsyncSession = Depend
     result = await db.scalars(select(EquipmentModel).where(EquipmentModel.serial_number == equipment.serial_number))
     if result.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Серийный номер оборудования уже зарегистрирован")
+
+    # Проверка температурных порогов
+    if equipment.warning_limit >= equipment.critical_limit:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Порог предупреждения должен быть ниже критического порога")
 
     # Создание нового оборудования
     db_equipment = EquipmentModel(**equipment.model_dump())
@@ -117,11 +122,31 @@ async def update_equipment(equipment_id: int, equipment: EquipmentCreate, db: As
     if serial_number_result.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Серийный номер оборудования уже зарегистрирован")
 
+    # Проверка температурных порогов
+    if equipment.warning_limit >= equipment.critical_limit:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Порог предупреждения должен быть ниже критического порога")
+
     # Обновление оборудования
     db_equipment.name = equipment.name
     db_equipment.equipment_type = equipment.equipment_type
     db_equipment.serial_number = equipment.serial_number
+    db_equipment.warning_limit = equipment.warning_limit
+    db_equipment.critical_limit = equipment.critical_limit
 
+    # Обновление статуса оборудования при изменении температурных порогов
+    last_measurement = await db.scalar(
+        select(MeasurementModel)
+        .where(MeasurementModel.equipment_id == equipment_id)
+        .order_by(
+            MeasurementModel.received_at.desc(),
+            MeasurementModel.id.desc(),
+        )
+        .limit(1)
+    )
+
+    temperature = (last_measurement.temperature if last_measurement is not None else None)
+
+    db_equipment.status = get_equipment_status(temperature, db_equipment.warning_limit, db_equipment.critical_limit)
 
     await db.commit()
     await db.refresh(db_equipment)

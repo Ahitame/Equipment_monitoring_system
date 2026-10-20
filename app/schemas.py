@@ -10,6 +10,8 @@ class EquipmentCreate(BaseModel):
     name: str = Field(min_length=3, max_length=100, description="Название оборудования (3-100 символов)")
     equipment_type: str = Field(min_length=3, max_length=100, description="Тип оборудования (3-100 символов)")
     serial_number: str = Field(min_length=1, max_length=100, description="Серийный номер оборудования (1-100 символов)")
+    warning_limit: float = Field(default=70.0, ge=-273.15, description="Порог WARNING в градусах Цельсия")
+    critical_limit: float = Field(default=90.0, ge=-273.15, description="Порог CRITICAL в градусах Цельсия")
 
 class Equipment(BaseModel):
     """
@@ -21,6 +23,8 @@ class Equipment(BaseModel):
     serial_number: str = Field(description="Серийный номер оборудования")
     created_at: datetime = Field(description="Время создания оборудования")
     status: str = Field(pattern="^(NORMAL|WARNING|CRITICAL|UNKNOWN)$", description="Состояние оборудования")
+    warning_limit: float = Field(description="Порог WARNING в градусах Цельсия")
+    critical_limit: float = Field(description="Порог CRITICAL в градусах Цельсия")
 
     model_config = ConfigDict(from_attributes=True)
 

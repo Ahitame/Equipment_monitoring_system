@@ -28,7 +28,7 @@ async def create_measurement(equipment_id: int, measurement: MeasurementCreate, 
     db.add(db_measurement)
 
     # Обновление состояния оборудования
-    db_equipment.status = get_equipment_status(measurement.temperature)
+    db_equipment.status = get_equipment_status(measurement.temperature, db_equipment.warning_limit, db_equipment.critical_limit)
 
     await db.commit()
     await db.refresh(db_measurement)
