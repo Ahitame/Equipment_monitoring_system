@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Текущие показания оборудования и история измерений температуры и давления.">
+  <meta name="theme-color" content="#17324f">
+  <title>Устройство · Мониторинг оборудования</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./device.js"></script>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner"><a class="brand" href="./" aria-label="Мониторинг оборудования — главная"><span class="brand-mark" data-icon="activity"></span><span><span class="brand-name">Мониторинг</span><span class="brand-caption">оборудования</span></span></a><div id="connection-status" class="system-status is-loading" role="status"><span class="status-dot"></span><span>Подключение…</span></div></div></header>
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Навигация"><a href="./"><span data-icon="arrow-left"></span>Все оборудование</a><span aria-hidden="true">/</span><span id="breadcrumb-name">Устройство</span></nav>
+    <section class="page-heading device-heading"><div><p class="eyebrow" id="device-type">Карточка устройства</p><h1 class="page-title" id="device-name">Загрузка устройства…</h1><p class="page-subtitle" id="device-subtitle">Текущие показания и история измерений</p></div><div class="heading-actions"><button id="edit-equipment" class="button button-secondary" type="button" disabled><span data-icon="edit"></span>Изменить</button><button id="add-measurement" class="button button-primary" type="button" disabled><span data-icon="plus"></span>Добавить показание</button></div></section>
+    <div id="page-error" class="notice notice-error" role="alert" hidden></div>
+    <div id="device-content" hidden>
+      <section class="panel device-summary" aria-label="Информация об устройстве">
+        <div class="panel-header"><h2 class="panel-title">Текущее состояние</h2><span id="device-status"></span></div>
+        <div class="reading-cards"><div class="reading-card"><span class="reading-label"><span data-icon="thermometer"></span>Температура</span><p><span class="reading-number" id="latest-temperature">—</span> <span class="reading-unit">°C</span></p></div><div class="reading-card"><span class="reading-label"><span data-icon="gauge"></span>Давление</span><p><span class="reading-number" id="latest-pressure">—</span> <span class="reading-unit">бар</span></p></div><div class="reading-card"><span class="reading-label"><span data-icon="clock"></span>Последнее показание</span><p class="fact-value" id="latest-time">Показаний пока нет</p></div></div>
+        <dl class="device-facts"><div class="fact"><dt class="fact-label">Серийный номер</dt><dd class="fact-value" id="device-serial">—</dd></div><div class="fact"><dt class="fact-label">Добавлено</dt><dd class="fact-value" id="device-created">—</dd></div><div class="fact"><dt class="fact-label">Порог предупреждения</dt><dd class="fact-value" id="device-warning">—</dd></div><div class="fact"><dt class="fact-label">Критический порог</dt><dd class="fact-value" id="device-critical">—</dd></div></dl>
+      </section>
+      <section class="panel chart-panel" aria-labelledby="history-title"><div class="panel-header"><div><h2 class="panel-title" id="history-title">История температуры</h2><p class="panel-subtitle" id="timezone-label">Время по часовому поясу браузера</p></div><div class="chart-range" role="group" aria-label="Быстрый выбор периода"><button class="button button-secondary button-small" type="button" data-range="24" aria-pressed="true">Сутки</button><button class="button button-ghost button-small" type="button" data-range="168" aria-pressed="false">7 дней</button><button class="button button-ghost button-small" type="button" data-range="720" aria-pressed="false">30 дней</button></div></div>
+        <form id="history-form" class="period-controls"><div class="date-fields"><label class="field"><span class="field-label">Начало периода</span><input id="date-from" name="date_from" type="datetime-local" step="1" required></label><label class="field"><span class="field-label">Конец периода, включительно</span><input id="date-to" name="date_to" type="datetime-local" step="1" required></label></div><button class="button button-primary" type="submit">Показать</button></form>
+        <p id="history-error" class="form-error" role="alert" hidden></p>
+        <div id="device-chart" class="chart-container" aria-live="polite"><div class="empty-state"><p class="empty-title">Загружаем историю…</p></div></div>
+        <div class="chart-summary"><div class="chart-legend"><span class="legend-item"><span class="legend-dot"></span>Температура</span><span class="legend-item"><span class="legend-dot" style="background:#d99a16"></span>Порог предупреждения</span><span class="legend-item"><span class="legend-dot" style="background:#e34d59"></span>Критический порог</span></div><span id="history-count">—</span></div>
+      </section>
+      <section class="panel" aria-labelledby="measurements-title"><div class="panel-header"><div><h2 class="panel-title" id="measurements-title">Измерения за период</h2><p class="panel-subtitle" id="measurements-description">Сначала новые</p></div><button id="refresh-device" class="button button-secondary button-small" type="button"><span data-icon="refresh"></span>Обновить</button></div><div class="table-wrap"><table><caption class="sr-only">История измерений оборудования</caption><thead><tr><th scope="col">Дата и время</th><th scope="col">Температура</th><th scope="col">Давление</th></tr></thead><tbody id="history-body"><tr><td colspan="3" class="table-empty">Загружаем измерения…</td></tr></tbody></table></div></section>
+      <div class="panel-actions" style="justify-content:space-between"><a class="device-link" href="./"><span data-icon="arrow-left"></span>К списку оборудования</a><button id="delete-equipment" class="button button-ghost button-small text-critical" type="button"><span data-icon="trash"></span>Удалить оборудование</button></div>
+    </div>
+    <footer class="footer"><span class="footer-note"><span data-icon="clock"></span><span id="last-updated">Ожидаем данные</span></span><span>Обновление каждые 15 секунд</span></footer>
+  </main>
+  <noscript><div class="notice notice-error">Для работы интерфейса включите JavaScript в браузере.</div></noscript>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

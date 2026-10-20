@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Панель мониторинга оборудования: текущие показания, состояния и история измерений.">
+  <meta name="theme-color" content="#17324f">
+  <title>Мониторинг оборудования</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./dashboard.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="./" aria-label="Мониторинг оборудования — главная">
+        <span class="brand-mark" data-icon="activity"></span>
+        <span><span class="brand-name">Мониторинг</span><span class="brand-caption">оборудования</span></span>
+      </a>
+      <div id="connection-status" class="system-status is-loading" role="status"><span class="status-dot"></span><span>Подключение…</span></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="page-heading" aria-labelledby="page-title">
+      <div><p class="eyebrow">Обзор системы</p><h1 class="page-title" id="page-title">Мониторинг оборудования</h1><p class="page-subtitle">Общая панель состояния устройств</p></div>
+      <div class="heading-actions"><button id="add-equipment" class="button button-primary" type="button"><span data-icon="plus"></span>Добавить оборудование</button></div>
+    </section>
+
+    <div id="page-error" class="notice notice-error" role="alert" hidden></div>
+
+    <section class="stats-grid" aria-label="Сводная статистика">
+      <article class="stat-card stat-total"><div class="stat-icon" data-icon="server"></div><div><p class="stat-label">Всего устройств</p><p class="stat-value" id="stat-total">—</p><p class="stat-note">Без показаний: <span id="stat-unknown">—</span></p></div></article>
+      <article class="stat-card stat-normal"><div class="stat-icon" data-icon="check-circle"></div><div><p class="stat-label">В норме</p><p class="stat-value" id="stat-normal">—</p><p class="stat-note">Штатный режим</p></div></article>
+      <article class="stat-card stat-warning"><div class="stat-icon" data-icon="alert-triangle"></div><div><p class="stat-label">Предупреждение</p><p class="stat-value" id="stat-warning">—</p><p class="stat-note">Требует внимания</p></div></article>
+      <article class="stat-card stat-critical"><div class="stat-icon" data-icon="alert-circle"></div><div><p class="stat-label">Критическое</p><p class="stat-value" id="stat-critical">—</p><p class="stat-note">Порог превышен</p></div></article>
+    </section>
+
+    <section class="panel" aria-labelledby="equipment-title">
+      <div class="panel-header"><div><h2 class="panel-title" id="equipment-title">Оборудование</h2><p class="panel-subtitle">Текущие показания и состояние каждого устройства</p></div><button id="refresh-dashboard" class="button button-secondary button-small" type="button"><span data-icon="refresh"></span>Обновить</button></div>
+      <form id="filter-form" class="toolbar" role="search">
+        <label class="search-field"><span class="sr-only">Поиск по названию</span><span class="input-icon" data-icon="search"></span><input id="search" name="search" type="search" placeholder="Поиск по названию оборудования" autocomplete="off"></label>
+        <label class="filter-field"><span class="sr-only">Фильтр по состоянию</span><select id="status-filter" name="status"><option value="">Все состояния</option><option value="NORMAL">В норме · NORMAL</option><option value="WARNING">Предупреждение · WARNING</option><option value="CRITICAL">Критическое · CRITICAL</option><option value="UNKNOWN">Без показаний · UNKNOWN</option></select></label>
+        <button id="reset-filters" class="button button-ghost button-small" type="button" hidden>Сбросить</button>
+      </form>
+      <div class="table-wrap"><table class="equipment-table"><caption class="sr-only">Оборудование и последние измерения</caption><thead><tr><th scope="col">Устройство</th><th scope="col">Тип</th><th scope="col">Температура</th><th scope="col">Давление</th><th scope="col">Состояние</th><th scope="col"><span class="sr-only">Действия</span></th></tr></thead><tbody id="equipment-body" aria-busy="true"><tr><td colspan="6" class="table-empty"><span class="loading-text">Загружаем оборудование…</span></td></tr></tbody></table></div>
+      <div class="table-footer"><span id="equipment-count">Загрузка списка…</span><span>Нажмите на название, чтобы открыть устройство</span></div>
+    </section>
+
+    <section class="panel chart-panel" aria-labelledby="chart-title">
+      <div class="panel-header chart-heading"><div><h2 class="panel-title" id="chart-title">История температуры</h2><p class="panel-subtitle" id="chart-description">Выберите устройство для просмотра измерений</p></div><div class="panel-actions"><label><span class="sr-only">Устройство для графика</span><select id="chart-equipment" aria-label="Устройство для графика" disabled><option value="">Нет устройств</option></select></label><label><span class="sr-only">Период графика</span><select id="chart-period" aria-label="Период графика"><option value="24">За сутки</option><option value="168">За 7 дней</option><option value="720">За 30 дней</option></select></label></div></div>
+      <div id="dashboard-chart" class="chart-container" aria-live="polite"><div class="empty-state"><span class="empty-icon" data-icon="chart"></span><p class="empty-title">Здесь появится история температуры</p><p class="empty-description">Добавьте оборудование и отправьте первое показание</p></div></div>
+      <div class="chart-summary"><span class="chart-legend"><span class="legend-item"><span class="legend-dot"></span>Температура, °C</span></span><a id="chart-detail-link" class="device-link" href="./" hidden>Открыть историю устройства <span aria-hidden="true">→</span></a></div>
+    </section>
+    <footer class="footer"><span class="footer-note"><span data-icon="clock"></span><span id="last-updated">Ожидаем данные</span></span><span>Обновление каждые 15 секунд</span></footer>
+  </main>
+  <noscript><div class="notice notice-error">Для работы интерфейса включите JavaScript в браузере.</div></noscript>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
