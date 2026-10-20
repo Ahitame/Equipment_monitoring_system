@@ -6,6 +6,8 @@ from app.models import Equipment as EquipmentModel, Measurement as MeasurementMo
 from app.schemas import Equipment as EquipmentSchema, EquipmentCreate, EquipmentStatistics
 from app.equipment_status import get_equipment_status
 
+from app.cache import cache, STATISTICS_CACHE_KEY, get_latest_measurement_key
+
 from app.db_depends import get_async_db
 
 
@@ -33,6 +35,7 @@ async def create_equipment(equipment: EquipmentCreate, db: AsyncSession = Depend
     db_equipment = EquipmentModel(**equipment.model_dump())
     db.add(db_equipment)
     await db.commit()
+    await cache.delete(STATISTICS_CACHE_KEY)
     await db.refresh(db_equipment)
     return db_equipment
 
@@ -70,21 +73,34 @@ async def get_all_equipment(
 @router.get("/statistics", response_model=EquipmentStatistics)
 async def get_equipment_statistics(db: AsyncSession = Depends(get_async_db)):
     """
-    Получение сводной статистики оборудования
+    Получение сводной статистики оборудования и кеширование
     """
+    # Получение ответа из Redis
+    cached_statistics = await cache.get(STATISTICS_CACHE_KEY)
+    if cached_statistics is not None:
+        try:
+            return EquipmentStatistics.model_validate_json(cached_statistics)
+        except ValueError:
+            # Удаление некорректного кэша
+            await cache.delete(STATISTICS_CACHE_KEY)
+
     # Подсчет оборудования в каждом состоянии
     status_count = await db.execute(select(EquipmentModel.status, func.count(EquipmentModel.id)).group_by(EquipmentModel.status))
 
-    # Создание словаря со сводной статистикой
+    # Создание сводной статистикой
     statistics = {equipment_status: count for equipment_status, count in status_count.all()}
-
-    return EquipmentStatistics(
+    statistics = EquipmentStatistics(
         total=sum(statistics.values()),
         normal=statistics.get("NORMAL", 0),
         warning=statistics.get("WARNING", 0),
         critical=statistics.get("CRITICAL", 0),
         unknown=statistics.get("UNKNOWN", 0),
     )
+
+    # Сохранение ответа в Redis
+    await cache.set(STATISTICS_CACHE_KEY,statistics.model_dump_json())
+
+    return statistics
 
 
 @router.get("/{equipment_id}", response_model=EquipmentSchema, status_code=status.HTTP_200_OK)
@@ -149,6 +165,7 @@ async def update_equipment(equipment_id: int, equipment: EquipmentCreate, db: As
     db_equipment.status = get_equipment_status(temperature, db_equipment.warning_limit, db_equipment.critical_limit)
 
     await db.commit()
+    await cache.delete(STATISTICS_CACHE_KEY, get_latest_measurement_key(equipment_id))
     await db.refresh(db_equipment)
 
     return db_equipment
@@ -167,3 +184,4 @@ async def delete_one_equipment(equipment_id: int, db: AsyncSession = Depends(get
 
     await db.delete(db_equipment)
     await db.commit()
+    await cache.delete(STATISTICS_CACHE_KEY, get_latest_measurement_key(equipment_id))

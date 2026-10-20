@@ -1,11 +1,23 @@
 from fastapi import FastAPI
 
+from contextlib import asynccontextmanager
+from app.cache import cache
+
 from app.routers import equipment, measurements
+
+# Закрытие Redis при остановке приложения
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        yield
+    finally:
+        await cache.close()
 
 # Приложение
 app = FastAPI(
     title='Equipment monitoring system',
-    version='0.1.0',
+    version='0.7.0',
+    lifespan=lifespan,
 )
 
 # Подключение маршрутов
