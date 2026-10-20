@@ -58,6 +58,45 @@ docker compose up -d --build
 docker compose stop
 ```
 
+## Запуск бэкенда без Docker
+
+Нужны Git, Python 3.13 и работающие PostgreSQL и Redis.
+
+Клонировать репозиторий:
+
+```powershell
+git clone https://github.com/Ahitame/Equipment_monitoring_system.git
+cd Equipment_monitoring_system
+```
+
+Создать виртуальное окружение и установить зависимости:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Создать в PostgreSQL пользователя и базу данных с этим пользователем в качестве владельца.
+
+В `.env` указать свои параметры подключения:
+
+```dotenv
+DATABASE_URL=postgresql+asyncpg://equipment_user:MyPassword123@127.0.0.1:5432/equipment_monitoring
+REDIS_URL=redis://127.0.0.1:6379/0
+CACHE_TTL=60
+```
+
+Применить миграции и запустить сервер:
+
+```powershell
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+
+Swagger: http://127.0.0.1:8000/docs
+
 ## Кэширование
 
 В Redis сохраняются:
