@@ -27,85 +27,36 @@ Python 3.13, FastAPI, SQLAlchemy, PostgreSQL, Alembic, Redis,
 Docker Compose, pytest, pytest-asyncio, HTTPX.
 Веб-интерфейс: HTML, CSS, JavaScript и Nginx.
 
-## Запуск приложения
+## Запуск приложения через Docker
 
-Для запуска нужен Docker с поддержкой Docker Compose.
-На Windows можно использовать Docker Desktop.
+Для запуска нужен Git и Docker с поддержкой Docker Compose.
 
-Клонировать репозиторий:
+Клонировать репозиторий и создать `.env`:
 
 ```powershell
 git clone https://github.com/Ahitame/Equipment_monitoring_system.git
 cd Equipment_monitoring_system
-```
-
-При первом запуске создать `.env` из шаблона:
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-В `.env` указать параметры контейнерной базы:
+В `.env` заменить `POSTGRES_PASSWORD` своим паролем из латинских букв и цифр.
 
-```dotenv
-POSTGRES_USER=equipment_user
-POSTGRES_PASSWORD=changeMe123
-POSTGRES_DB=equipment_monitoring
-CACHE_TTL=60
-```
-
-`POSTGRES_PASSWORD` следует заменить своим паролем. Используйте латинские буквы и цифры.
-
- `.env.example` содержит пример настроек.
-
-Собрать образы приложения и запустить сервисы:
+Собрать и запустить приложение:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Compose запускает веб-интерфейс на Nginx, FastAPI, PostgreSQL и Redis.
-Миграции Alembic применяются автоматически перед запуском FastAPI.
+База данных и таблицы создаются автоматически.
 
-Веб-интерфейс: http://127.0.0.1:8080/
+- Веб-интерфейс: http://127.0.0.1:8080/
+- Swagger: http://127.0.0.1:8000/docs
 
-Документация API: http://127.0.0.1:8000/docs
-
-Проверка состояния сервисов:
+Остановить приложение:
 
 ```powershell
-docker compose ps
+docker compose stop
 ```
-
-Данные PostgreSQL сохраняются в томе `postgres_data`.
-База внутри Docker создаётся отдельно от PostgreSQL, установленного на компьютере
-
-## Веб-интерфейс
-
-Главная страница содержит статистику, поиск и фильтрацию оборудования,
-таблицу текущих показаний и форму добавления устройства.
-На странице устройства доступны отправка новых показаний и история
-за выбранный период с графиком температуры на SVG.
-
-Интерфейс работает с существующим API и не содержит демонстрационных данных.
-Исходные HTML, CSS и JavaScript находятся в `frontend/dist`.
-Nginx передаёт запросы `/api/` в FastAPI, поэтому настройка CORS не требуется.
-
-После изменения файлов интерфейса пересобрать и запустить сервисы:
-
-```powershell
-docker compose up -d --build
-```
-
-## Настройки подключения
-
-В контейнер приложения Compose передаёт адреса сервисов `postgres` и `redis`.
-
-Переменные `DATABASE_URL` и `REDIS_URL` из `.env.example` предназначены
-для запуска Python вне Docker. Для такого запуска требуется отдельно
-подготовить локальную базу и указать её данные
-
-`CACHE_TTL` задаёт время хранения кэша в секундах
 
 ## Кэширование
 
@@ -158,7 +109,6 @@ python -m pytest tests -v
 - Актуальность кэша последнего измерения.
 - Актуальность кэша статистики после изменения данных.
 - Работа API при ошибках подключения к Redis.
-
 
 Остановить тестовые сервисы:
 
